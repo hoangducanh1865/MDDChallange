@@ -84,7 +84,7 @@ python main.py --mode <eval|test> \
 | Tham số | Mặc định | Dùng khi | Mô tả |
 |---------|----------|----------|-------|
 | `--mode` | *(bắt buộc)* | eval / test | `eval`: huấn luyện 5-fold CV và log Score. `test`: sinh `predictions.csv` |
-| `--data_dir` | *(bắt buộc)* | eval / test | Thư mục gốc dataset (chứa `metadata/` và `audio_data/`) |
+| `--data_dir` | `./data/MDD-Challenge-2025-training-set` | eval / test | Thư mục gốc dataset (chứa `metadata/` và `audio_data/`) |
 | `--model` | `facebook/wav2vec2-base-100h` | eval | Backbone model. Xem bảng model bên dưới |
 | `--n_folds` | `5` | eval | Số fold cross-validation |
 | `--epochs` | `30` | eval | Số epoch mỗi fold |
@@ -124,32 +124,14 @@ outputs/checkpoints/
 ### Ví dụ
 
 ```bash
-# Train với model mặc định
-python main.py --mode eval \
-               --data_dir ./data/MDD-Challenge-2025-training-set \
-               --n_folds 5 --epochs 30 --batch_size 16 --lr 1e-4
-
-# Train với model tiếng Việt
-python main.py --mode eval \
-               --data_dir ./data/MDD-Challenge-2025-training-set \
-               --model vinai/wav2vec2-base-vietnamese-250h \
-               --n_folds 5 --epochs 30 --batch_size 16
-
-# Train trên Colab — lưu checkpoint vào Google Drive
-python main.py --mode eval \
-               --data_dir ./data/MDD-Challenge-2025-training-set \
-               --checkpoint_dir /content/drive/MyDrive/MDDChallange/checkpoints \
-               --n_folds 5 --epochs 30 --batch_size 16
+# Train với tham số mặc định
+python main.py --mode eval 
 
 # Chạy nhanh để kiểm tra pipeline (2 fold, 2 epoch)
-python main.py --mode eval \
-               --data_dir ./data/MDD-Challenge-2025-training-set \
-               --n_folds 2 --epochs 2 --batch_size 4
+python main.py --mode eval --n_folds 2 --epochs 2 
 
 # Inference → sinh predictions.csv (tự scan tất cả checkpoint trong thư mục)
-python main.py --mode test \
-               --data_dir ./data/MDD-Challenge-2025-test-set \
-               --checkpoint_dir ./outputs/checkpoints
+python main.py --mode test 
 ```
 
 ### Resume sau khi bị ngắt
@@ -161,10 +143,7 @@ Khi session Colab bị ngắt hoặc bạn muốn tiếp tục train, **chạy l
 
 ```bash
 # Chạy lại y hệt lệnh ban đầu — code tự resume, không cần flag thêm
-python main.py --mode eval \
-               --data_dir ./data/MDD-Challenge-2025-training-set \
-               --checkpoint_dir /content/drive/MyDrive/MDDChallange/checkpoints \
-               --n_folds 5 --epochs 30 --batch_size 16
+python main.py --mode eval 
 ```
 
 ## Project Structure

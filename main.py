@@ -21,7 +21,7 @@ def parse_args():
         help="'eval': 5-fold CV on training data. 'test': inference on unlabelled test set.",
     )
     parser.add_argument(
-        "--data_dir", required=True,
+        "--data_dir", default="./data/MDD-Challenge-2025-training-set",
         help="Root of the dataset (e.g. ./data/MDD-Challenge-2025-training-set).",
     )
     # Model selection
