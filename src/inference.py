@@ -245,16 +245,24 @@ def generate_predictions(args):
         num_workers=0,
     )
 
-    # ---- Checkpoint discovery ----
-    checkpoint_paths: Dict[str, List[str]] = {m: [] for m in BACKBONE_NAMES}
-    for ckpt_file in sorted(ckpt_dir.glob("best_fold*.pt")):
-        for mname in BACKBONE_NAMES:
-            safe = mname.replace("/", "_").replace("-", "_")
-            if safe in ckpt_file.name:
-                checkpoint_paths[mname].append(str(ckpt_file))
+    # ---- Checkpoint discovery (scan subdirs created by train.py) ----
+    # Structure: {ckpt_dir}/{safe_model_name}/fold{i}_best.pt
+    #            {ckpt_dir}/{safe_model_name}/model_name.txt
+    checkpoint_paths: Dict[str, List[str]] = {}
+    for subdir in sorted(ckpt_dir.iterdir()):
+        if not subdir.is_dir():
+            continue
+        best_ckpts = sorted(subdir.glob("fold*_best.pt"))
+        if not best_ckpts:
+            continue
+        # Recover original model name from saved text file
+        name_file = subdir / "model_name.txt"
+        mname = name_file.read_text().strip() if name_file.exists() else subdir.name
+        checkpoint_paths[mname] = [str(p) for p in best_ckpts]
+        print(f"  Found {len(best_ckpts)} best checkpoint(s) for {mname}")
 
-    if not any(checkpoint_paths.values()):
-        raise FileNotFoundError(f"No checkpoints in {ckpt_dir}")
+    if not checkpoint_paths:
+        raise FileNotFoundError(f"No best checkpoints found in {ckpt_dir}")
 
     vocab_size = len(vocab)
 

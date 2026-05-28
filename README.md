@@ -83,34 +83,88 @@ python main.py --mode <eval|test> \
 
 | Tham số | Mặc định | Dùng khi | Mô tả |
 |---------|----------|----------|-------|
-| `--mode` | *(bắt buộc)* | eval / test | `eval`: huấn luyện 5-fold CV và log Score. `test`: sinh `predictions.csv` từ tập test chưa có nhãn |
-| `--data_dir` | *(bắt buộc)* | eval / test | Thư mục gốc của dataset (chứa `metadata/` và `audio_data/`) |
+| `--mode` | *(bắt buộc)* | eval / test | `eval`: huấn luyện 5-fold CV và log Score. `test`: sinh `predictions.csv` |
+| `--data_dir` | *(bắt buộc)* | eval / test | Thư mục gốc dataset (chứa `metadata/` và `audio_data/`) |
+| `--model` | `facebook/wav2vec2-base-100h` | eval | Backbone model. Xem bảng model bên dưới |
 | `--n_folds` | `5` | eval | Số fold cross-validation |
-| `--epochs` | `30` | eval | Số epoch huấn luyện mỗi fold |
-| `--batch_size` | `16` | eval | Batch size — dùng `4` trên M1, `16` trên T4, `32` trên A100 |
+| `--epochs` | `30` | eval | Số epoch mỗi fold |
+| `--batch_size` | `16` | eval | Batch size — `4` trên M1, `16` trên T4, `32` trên A100 |
 | `--lr` | `1e-4` | eval | Learning rate cơ sở (LLRD tính tương đối từ giá trị này) |
-| `--llrd_decay` | `0.9` | eval | Hệ số giảm LR theo chiều sâu layer — nhỏ hơn = phân kỳ LR lớn hơn |
-| `--focal_gamma` | `2.0` | eval | Gamma của Focal Loss — lớn hơn = tập trung nhiều hơn vào sample khó |
-| `--seed` | `42` | eval | Random seed để tái tạo kết quả |
-| `--checkpoint_dir` | `./outputs/checkpoints` | eval / test | Nơi lưu (eval) hoặc đọc (test) checkpoint |
+| `--llrd_decay` | `0.9` | eval | Hệ số giảm LR theo chiều sâu layer |
+| `--focal_gamma` | `2.0` | eval | Gamma Focal Loss — lớn hơn = tập trung vào sample khó hơn |
+| `--seed` | `42` | eval | Random seed |
+| `--checkpoint_dir` | `./outputs/checkpoints` | eval / test | Thư mục gốc lưu/đọc checkpoint |
+
+### Model được hỗ trợ
+
+| Giá trị `--model` | Nguồn | Ghi chú |
+|-------------------|-------|---------|
+| `facebook/wav2vec2-base-100h` | HuggingFace (tự tải) | Mặc định |
+| `vinai/wav2vec2-base-vietnamese-250h` | HuggingFace (tự tải) | Tốt hơn cho tiếng Việt |
+| `hubert-base-ls960` | Local (`./models/`) | Cần tải thủ công từ Drive |
+
+### Cấu trúc checkpoint
+
+```
+outputs/checkpoints/
+└── facebook_wav2vec2-base-100h/    ← tên backbone (/ → _)
+    ├── model_name.txt               ← tên model gốc (để inference tự nhận dạng)
+    ├── fold0_epoch1.pt              ← full state (model + optimizer) để resume
+    ├── fold0_epoch2.pt
+    ├── ...
+    ├── fold0_best.pt                ← chỉ model weights, Score cao nhất của fold 0
+    ├── fold1_epoch1.pt
+    ├── fold1_best.pt
+    └── ...
+```
+
+> `fold{i}_epoch{j}.pt` chứa `model`, `optimizer`, `epoch`, `best_score`, `history` → đủ để tiếp tục train.
+> `fold{i}_best.pt` chỉ chứa model weights → dùng cho inference.
 
 ### Ví dụ
 
 ```bash
-# Eval trên toàn bộ training set (5 fold × 3 model = 15 checkpoint)
+# Train với model mặc định
 python main.py --mode eval \
                --data_dir ./data/MDD-Challenge-2025-training-set \
                --n_folds 5 --epochs 30 --batch_size 16 --lr 1e-4
+
+# Train với model tiếng Việt
+python main.py --mode eval \
+               --data_dir ./data/MDD-Challenge-2025-training-set \
+               --model vinai/wav2vec2-base-vietnamese-250h \
+               --n_folds 5 --epochs 30 --batch_size 16
+
+# Train trên Colab — lưu checkpoint vào Google Drive
+python main.py --mode eval \
+               --data_dir ./data/MDD-Challenge-2025-training-set \
+               --checkpoint_dir /content/drive/MyDrive/MDDChallange/checkpoints \
+               --n_folds 5 --epochs 30 --batch_size 16
 
 # Chạy nhanh để kiểm tra pipeline (2 fold, 2 epoch)
 python main.py --mode eval \
                --data_dir ./data/MDD-Challenge-2025-training-set \
                --n_folds 2 --epochs 2 --batch_size 4
 
-# Inference → sinh predictions.csv
+# Inference → sinh predictions.csv (tự scan tất cả checkpoint trong thư mục)
 python main.py --mode test \
                --data_dir ./data/MDD-Challenge-2025-test-set \
                --checkpoint_dir ./outputs/checkpoints
+```
+
+### Resume sau khi bị ngắt
+
+Khi session Colab bị ngắt hoặc bạn muốn tiếp tục train, **chạy lại đúng lệnh cũ**. Code tự động:
+1. Tìm `fold{i}_epoch{j}.pt` mới nhất trong thư mục checkpoint của model đó
+2. Load lại model weights, optimizer state, epoch đã hoàn thành, best_score và history
+3. Tiếp tục từ epoch tiếp theo
+
+```bash
+# Chạy lại y hệt lệnh ban đầu — code tự resume, không cần flag thêm
+python main.py --mode eval \
+               --data_dir ./data/MDD-Challenge-2025-training-set \
+               --checkpoint_dir /content/drive/MyDrive/MDDChallange/checkpoints \
+               --n_folds 5 --epochs 30 --batch_size 16
 ```
 
 ## Project Structure
