@@ -214,13 +214,22 @@ def train_fold(
     resume_ckpt = _find_latest_epoch_ckpt(ckpt_dir, fold_idx)
     if resume_ckpt is not None:
         print(f"  Resuming from {resume_ckpt.name} ...")
-        state      = torch.load(resume_ckpt, map_location=device)
-        model.load_state_dict(state["model"])
-        optimizer.load_state_dict(state["optimizer"])
-        start_epoch = state["epoch"] + 1
-        best_score  = state.get("best_score", -1.0)
-        history     = state.get("history", history)
-        print(f"  Resumed — completed epoch {state['epoch']}, best_score={best_score:.4f}")
+        state = torch.load(resume_ckpt, map_location=device)
+
+        if isinstance(state, dict) and "model" in state:
+            # New format: full state dict with keys
+            model.load_state_dict(state["model"])
+            optimizer.load_state_dict(state["optimizer"])
+            start_epoch = state["epoch"] + 1
+            best_score  = state.get("best_score", -1.0)
+            history     = state.get("history", history)
+            print(f"  Resumed — completed epoch {state['epoch']}, best_score={best_score:.4f}")
+        else:
+            # Legacy format: raw model.state_dict() (flat OrderedDict, no optimizer state)
+            model.load_state_dict(state)
+            m = re.search(r"epoch(\d+)", resume_ckpt.name)
+            start_epoch = (int(m.group(1)) + 1) if m else 1
+            print(f"  Resumed (legacy checkpoint, no optimizer state) — continuing from epoch {start_epoch}")
 
     if start_epoch > args.epochs:
         print(f"  Fold {fold_idx} already completed ({args.epochs} epochs), skipping.")

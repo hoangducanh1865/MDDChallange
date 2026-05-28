@@ -128,7 +128,7 @@ outputs/checkpoints/
 python main.py --mode eval 
 
 # Chạy nhanh để kiểm tra pipeline (2 fold, 2 epoch)
-python main.py --mode eval --n_folds 2 --epochs 2 
+python main.py --mode eval --n_folds 2 --epochs 1
 
 # Inference → sinh predictions.csv (tự scan tất cả checkpoint trong thư mục)
 python main.py --mode test 
