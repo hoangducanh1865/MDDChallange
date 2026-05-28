@@ -16,6 +16,7 @@ from src.utils import (
     BLANK_TOKEN_ID,
     build_feature_extractor,
     compute_score,
+    get_device,
     greedy_decode,
     load_or_build_vocab,
     visualize_cv_summary,
@@ -275,7 +276,7 @@ def train_fold(
 
 def run_cross_validation(args):
     torch.manual_seed(args.seed)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = get_device()
     print(f"Device: {device}")
 
     vocab            = load_or_build_vocab(args.data_dir)

@@ -1,4 +1,9 @@
+import os
 import argparse
+
+# Enable CPU fallback for MPS (Apple Silicon) on ops not yet supported by Metal.
+# Has no effect on CUDA or CPU-only machines.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 
 def parse_args():

@@ -100,10 +100,14 @@ class MDDModel(nn.Module):
 
         if self._is_hubert:
             from transformers import HubertModel
-            self.backbone = HubertModel.from_pretrained(pretrained_path)
+            self.backbone = HubertModel.from_pretrained(
+                pretrained_path, ignore_mismatched_sizes=True,
+            )
         else:
             from transformers import Wav2Vec2Model
-            self.backbone = Wav2Vec2Model.from_pretrained(pretrained_path)
+            self.backbone = Wav2Vec2Model.from_pretrained(
+                pretrained_path, ignore_mismatched_sizes=True,
+            )
 
         self.phonetic_enc = PhoneticEncoder(hidden_dim=hidden_dim)
         self.linguistic_enc = LinguisticEncoder(vocab_size=vocab_size)

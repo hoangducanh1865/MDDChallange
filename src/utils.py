@@ -11,11 +11,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
+import torch.backends
 from transformers import Wav2Vec2FeatureExtractor
 
 SAMPLE_RATE = 16000
 BLANK_TOKEN_ID = 0
 PAD_TOKEN_ID = 0
+
+
+def get_device() -> torch.device:
+    """Return best available device: CUDA > MPS > CPU."""
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        return torch.device("mps")
+    return torch.device("cpu")
 
 
 # ---------------------------------------------------------------------------

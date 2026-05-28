@@ -72,12 +72,42 @@ models/
 ## Usage
 
 ```bash
-# Cross-validation (eval mode) — trains all 3 models across 5 folds
+python main.py --mode <eval|test> \
+               --data_dir <path> \
+               [--n_folds N] [--epochs N] [--batch_size N] \
+               [--lr F] [--llrd_decay F] [--focal_gamma F] \
+               [--seed N] [--checkpoint_dir <path>]
+```
+
+### Tham số
+
+| Tham số | Mặc định | Dùng khi | Mô tả |
+|---------|----------|----------|-------|
+| `--mode` | *(bắt buộc)* | eval / test | `eval`: huấn luyện 5-fold CV và log Score. `test`: sinh `predictions.csv` từ tập test chưa có nhãn |
+| `--data_dir` | *(bắt buộc)* | eval / test | Thư mục gốc của dataset (chứa `metadata/` và `audio_data/`) |
+| `--n_folds` | `5` | eval | Số fold cross-validation |
+| `--epochs` | `30` | eval | Số epoch huấn luyện mỗi fold |
+| `--batch_size` | `16` | eval | Batch size — dùng `4` trên M1, `16` trên T4, `32` trên A100 |
+| `--lr` | `1e-4` | eval | Learning rate cơ sở (LLRD tính tương đối từ giá trị này) |
+| `--llrd_decay` | `0.9` | eval | Hệ số giảm LR theo chiều sâu layer — nhỏ hơn = phân kỳ LR lớn hơn |
+| `--focal_gamma` | `2.0` | eval | Gamma của Focal Loss — lớn hơn = tập trung nhiều hơn vào sample khó |
+| `--seed` | `42` | eval | Random seed để tái tạo kết quả |
+| `--checkpoint_dir` | `./outputs/checkpoints` | eval / test | Nơi lưu (eval) hoặc đọc (test) checkpoint |
+
+### Ví dụ
+
+```bash
+# Eval trên toàn bộ training set (5 fold × 3 model = 15 checkpoint)
 python main.py --mode eval \
                --data_dir ./data/MDD-Challenge-2025-training-set \
                --n_folds 5 --epochs 30 --batch_size 16 --lr 1e-4
 
-# Inference on unlabelled test set → produces predictions.csv
+# Chạy nhanh để kiểm tra pipeline (2 fold, 2 epoch)
+python main.py --mode eval \
+               --data_dir ./data/MDD-Challenge-2025-training-set \
+               --n_folds 2 --epochs 2 --batch_size 4
+
+# Inference → sinh predictions.csv
 python main.py --mode test \
                --data_dir ./data/MDD-Challenge-2025-test-set \
                --checkpoint_dir ./outputs/checkpoints
@@ -114,4 +144,7 @@ python main.py --mode test \
 - Vocab is built automatically from `train_phones.csv` on first run and cached at `outputs/vocab.json`.
 - Checkpoints are saved per fold and per model, named `best_fold{k}_{model_name}.pt`.
 - All plots are saved to `experiment/` during cross-validation.
-- For Colab with T4 GPU, use `--batch_size 8` and one model at a time if memory is tight.
+
+**Apple Silicon (M1/M2):** MPS is used automatically. `PYTORCH_ENABLE_MPS_FALLBACK=1` is set by `main.py` so ops not yet supported by Metal fall back to CPU silently. Use `--batch_size 4` to stay within shared 8 GB RAM.
+
+**Google Colab (T4/A100):** CUDA is used automatically. `--batch_size 16` (T4) or `--batch_size 32` (A100) is recommended.

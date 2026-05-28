@@ -17,6 +17,7 @@ from src.utils import (
     BLANK_TOKEN_ID,
     build_feature_extractor,
     compute_score,
+    get_device,
     greedy_decode,
     load_or_build_vocab,
 )
@@ -217,7 +218,7 @@ def find_ensemble_weights_optuna(
 # ---------------------------------------------------------------------------
 
 def generate_predictions(args):
-    device    = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device    = get_device()
     vocab     = load_or_build_vocab(args.data_dir)
     fe        = build_feature_extractor()
     ckpt_dir  = Path(args.checkpoint_dir)
