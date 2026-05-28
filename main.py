@@ -5,6 +5,12 @@ import argparse
 # Has no effect on CUDA or CPU-only machines.
 os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
+import transformers
+# Suppress "UNEXPECTED / MISSING key" load reports from from_pretrained().
+# We intentionally load ForCTC checkpoints into the base Model class,
+# so the mismatched keys are expected and safe to ignore.
+transformers.logging.set_verbosity_warning()
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
