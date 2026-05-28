@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+.DS_Store
+debug/
+stuff/
+
+# Large model weights — download manually (see README)
+models/hubert-base-ls960/pytorch_model.bin
+models/hubert-base-ls960/tf_model.h5
+
+# Generated outputs
+outputs/checkpoints/
+outputs/vocab.json
+predictions.csv
