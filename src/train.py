@@ -8,6 +8,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -205,6 +206,7 @@ def train_fold(
     ctc_loss_fn    = FocalCTCLoss(blank=BLANK_TOKEN_ID, gamma=args.focal_gamma)
     binary_loss_fn = nn.CrossEntropyLoss()
     optimizer      = build_llrd_optimizer(model, lr_base=args.lr, decay=args.llrd_decay)
+    scheduler      = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=args.lr * 1e-2)
 
     start_epoch = 1
     best_score  = -1.0
@@ -223,12 +225,21 @@ def train_fold(
             start_epoch = state["epoch"] + 1
             best_score  = state.get("best_score", -1.0)
             history     = state.get("history", history)
+            if "scheduler" in state:
+                scheduler.load_state_dict(state["scheduler"])
+            else:
+                # Checkpoint predates scheduler — fast-forward to the right cosine position
+                for _ in range(state["epoch"]):
+                    scheduler.step()
             print(f"  Resumed — completed epoch {state['epoch']}, best_score={best_score:.4f}")
         else:
             # Legacy format: raw model.state_dict() (flat OrderedDict, no optimizer state)
             model.load_state_dict(state)
             m = re.search(r"epoch(\d+)", resume_ckpt.name)
-            start_epoch = (int(m.group(1)) + 1) if m else 1
+            completed   = int(m.group(1)) if m else 0
+            start_epoch = completed + 1
+            for _ in range(completed):
+                scheduler.step()
             print(f"  Resumed (legacy checkpoint, no optimizer state) — continuing from epoch {start_epoch}")
 
     if start_epoch > args.epochs:
@@ -241,38 +252,36 @@ def train_fold(
         train_loss = _train_one_epoch(
             model, train_loader, optimizer, ctc_loss_fn, binary_loss_fn, device,
         )
+        scheduler.step()
         history["train_loss"].append(train_loss)
 
-        if epoch >= 3:
-            score, f1, per, der, _ = _eval_one_epoch(
-                model, val_loader, val_df, vocab, device,
-            )
-            history["score"].append(score)
-            history["f1"].append(f1)
-            history["per"].append(per)
-            history["der"].append(der)
+        score, f1, per, der, _ = _eval_one_epoch(
+            model, val_loader, val_df, vocab, device,
+        )
+        history["score"].append(score)
+        history["f1"].append(f1)
+        history["per"].append(per)
+        history["der"].append(der)
 
-            print(
-                f"  Epoch {epoch:3d}/{args.epochs} | loss={train_loss:.4f} | "
-                f"Score={score:.4f}  F1={f1:.4f}  DER={der:.4f}  PER={per:.4f}"
-            )
+        print(
+            f"  Epoch {epoch:3d}/{args.epochs} | loss={train_loss:.4f} | "
+            f"Score={score:.4f}  F1={f1:.4f}  DER={der:.4f}  PER={per:.4f}"
+        )
 
-            # Always update fold{i}_best.pt when score improves
-            if score > best_score:
-                best_score = score
-                torch.save(
-                    model.state_dict(),
-                    ckpt_dir / f"fold{fold_idx}_best.pt",
-                )
-                print(f"  ✓ Updated best (Score={best_score:.4f})")
-        else:
-            print(f"  Epoch {epoch:3d}/{args.epochs} | loss={train_loss:.4f}")
+        if score > best_score:
+            best_score = score
+            torch.save(
+                model.state_dict(),
+                ckpt_dir / f"fold{fold_idx}_best.pt",
+            )
+            print(f"  ✓ Updated best (Score={best_score:.4f})")
 
         # Save full state every epoch for resuming
         torch.save(
             {
                 "model":      model.state_dict(),
                 "optimizer":  optimizer.state_dict(),
+                "scheduler":  scheduler.state_dict(),
                 "epoch":      epoch,
                 "best_score": best_score,
                 "history":    history,

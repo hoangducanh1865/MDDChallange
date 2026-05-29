@@ -36,7 +36,7 @@ def parse_args():
     )
     # Training hyperparameters
     parser.add_argument("--n_folds",      type=int,   default=5,    help="Number of CV folds.")
-    parser.add_argument("--epochs",       type=int,   default=30,   help="Training epochs per fold.")
+    parser.add_argument("--epochs",       type=int,   default=50,   help="Training epochs per fold.")
     parser.add_argument("--batch_size",   type=int,   default=16,   help="Training batch size.")
     parser.add_argument("--lr",           type=float, default=1e-4, help="Base learning rate.")
     parser.add_argument("--llrd_decay",   type=float, default=0.9,  help="LLRD decay factor.")
