@@ -279,6 +279,9 @@ def train_fold(
             },
             ckpt_dir / f"fold{fold_idx}_epoch{epoch}.pt",
         )
+        prev_ckpt = ckpt_dir / f"fold{fold_idx}_epoch{epoch - 1}.pt"
+        if prev_ckpt.exists():
+            prev_ckpt.unlink()
 
     visualize_fold_history(fold_idx, model_name, history)
     return best_score, history, str(ckpt_dir / f"fold{fold_idx}_best.pt")
