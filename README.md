@@ -81,19 +81,19 @@ python main.py --mode <eval|test> \
 
 ### Tham số
 
-| Tham số | Mặc định | Dùng khi | Mô tả |
-|---------|----------|----------|-------|
-| `--mode` | *(bắt buộc)* | eval / test | `eval`: huấn luyện 5-fold CV và log Score. `test`: sinh `predictions.csv` |
-| `--data_dir` | `./data/MDD-Challenge-2025-training-set` | eval / test | Thư mục gốc dataset (chứa `metadata/` và `audio_data/`) |
-| `--model` | `facebook/wav2vec2-base-100h` | eval | Backbone model. Xem bảng model bên dưới |
-| `--n_folds` | `5` | eval | Số fold cross-validation |
-| `--epochs` | `30` | eval | Số epoch mỗi fold |
-| `--batch_size` | `16` | eval | Batch size — `4` trên M1, `16` trên T4, `32` trên A100 |
-| `--lr` | `1e-4` | eval | Learning rate cơ sở (LLRD tính tương đối từ giá trị này) |
-| `--llrd_decay` | `0.9` | eval | Hệ số giảm LR theo chiều sâu layer |
-| `--focal_gamma` | `2.0` | eval | Gamma Focal Loss — lớn hơn = tập trung vào sample khó hơn |
-| `--seed` | `42` | eval | Random seed |
-| `--checkpoint_dir` | `./outputs/checkpoints` | eval / test | Thư mục gốc lưu/đọc checkpoint |
+| Tham số | Mặc định | Dùng khi | Giá trị hợp lệ | Mô tả |
+|---------|----------|----------|----------------|-------|
+| `--mode` | *(bắt buộc)* | eval / test | `eval` \| `test` | `eval`: huấn luyện 5-fold CV và log Score. `test`: sinh `predictions.csv` |
+| `--data_dir` | `./data/MDD-Challenge-2025-training-set` | eval / test | đường dẫn hợp lệ | Thư mục gốc dataset (chứa `metadata/` và `audio_data/`) |
+| `--model` | `facebook/wav2vec2-base-100h` | eval | xem bảng model bên dưới | Backbone model |
+| `--n_folds` | `5` | eval | số nguyên ≥ 2 (thường `3`–`10`) | Số fold cross-validation |
+| `--epochs` | `30` | eval | số nguyên ≥ 1 (thường `10`–`50`) | Số epoch mỗi fold |
+| `--batch_size` | `16` | eval | `4` \| `8` \| `16` \| `32` | Batch size — `4` trên M1, `16` trên T4, `32` trên A100 |
+| `--lr` | `1e-4` | eval | `1e-5` – `1e-3` | Learning rate cơ sở (LLRD tính tương đối từ giá trị này) |
+| `--llrd_decay` | `0.9` | eval | `(0.0, 1.0]` (thường `0.8`–`0.95`) | Hệ số giảm LR theo chiều sâu layer; `1.0` = không decay |
+| `--focal_gamma` | `2.0` | eval | `0.0` – `5.0` (thường `0`, `1`, `2`, `5`) | Gamma Focal Loss — `0` = CE thường, lớn hơn = tập trung vào sample khó hơn |
+| `--seed` | `42` | eval | số nguyên bất kỳ | Random seed |
+| `--checkpoint_dir` | `./outputs/checkpoints` | eval / test | đường dẫn hợp lệ | Thư mục gốc lưu/đọc checkpoint |
 
 ### Model được hỗ trợ
 
