@@ -134,6 +134,8 @@ def _train_one_epoch(model, loader, optimizer, ctc_loss_fn, binary_loss_fn, devi
         loss     = loss_ctc + w_binary * loss_bin
 
         optimizer.zero_grad()
+        if not torch.isfinite(loss):
+            continue
         loss.backward()
         nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
         optimizer.step()

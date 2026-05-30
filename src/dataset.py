@@ -69,6 +69,7 @@ class MDDDataset(Dataset):
 
         if self.augment and self.augmenter is not None:
             waveform = self.augmenter(samples=waveform, sample_rate=SAMPLE_RATE)
+        waveform = np.nan_to_num(waveform, nan=0.0, posinf=1.0, neginf=-1.0)
 
         canonical_ids  = text_to_tensor(self.canonicals[idx],  self.vocab)
         transcript_ids = text_to_tensor(self.transcripts[idx], self.vocab)
@@ -113,6 +114,7 @@ def make_collate_fn(feature_extractor, device: torch.device, spec_augment: bool 
 
             inputs = feature_extractor(waveforms, sampling_rate=SAMPLE_RATE, padding=True, return_tensors="pt")
             input_values = inputs.input_values.to(device)
+            input_values = torch.nan_to_num(input_values, nan=0.0, posinf=1.0, neginf=-1.0)
 
             # SpecAugment: time masking on raw 1-D features
             if spec_augment:
